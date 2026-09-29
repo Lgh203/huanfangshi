@@ -78,17 +78,34 @@ struct FormulaCard:View {
     }
     var body:some View {
         VStack(alignment:.leading,spacing:8){
-            HStack(alignment:.top) {
-                Text(text.isEmpty ? (model.dual ? "":"等待生成公式"):text).font(.system(size:model.settings.fontSize,weight:.medium,design:.monospaced))
-                    .frame(maxWidth:.infinity,alignment:.leading)
-                    .onTapGesture(count:2){model.lockDisplay()}
+            FormulaFlow {
+                if model.formula.isEmpty && !model.dual {Text("等待生成公式").onTapGesture(count:2){model.lockDisplay()}}
+                ForEach(Array(model.formula.enumerated()),id:\.offset){index,move in
+                    Text(move.text).padding(.trailing,index%4==3 ? 12:0).onTapGesture(count:2){model.lockDisplay()}
+                }
                 if model.dual {
                     Button("S\(model.preset)"){model.togglePreset()}.font(.system(size:model.settings.fontSize,weight:.bold,design:.monospaced)).foregroundStyle(.green)
                 }
-            }
+            }.font(.system(size:model.settings.fontSize,weight:.medium,design:.monospaced))
             if model.busy{ProgressView()}
             Text(model.frozen ? "已锁定显示 · 双击公式解锁":"双击公式锁定；双魔方需先完成匹配").font(.caption2).foregroundStyle(.secondary)
         }.padding().background(Color.white.opacity(model.settings.opacity)).clipShape(RoundedRectangle(cornerRadius:14))
+    }
+}
+struct FormulaFlow:Layout {
+    private func positions(_ subviews:Subviews,width:CGFloat)->([CGPoint],CGSize){
+        var points:[CGPoint]=[],x:CGFloat=0,y:CGFloat=0,row:CGFloat=0,maxX:CGFloat=0
+        for view in subviews {
+            let s=view.sizeThatFits(.unspecified)
+            if x>0 && x+s.width>width {x=0;y+=row+6;row=0}
+            points.append(CGPoint(x:x,y:y));maxX=max(maxX,x+s.width);x+=s.width+8;row=max(row,s.height)
+        }
+        return (points,CGSize(width:maxX,height:y+row))
+    }
+    func sizeThatFits(proposal:ProposedViewSize,subviews:Subviews,cache:inout ())->CGSize {positions(subviews,width:proposal.width ?? 600).1}
+    func placeSubviews(in bounds:CGRect,proposal:ProposedViewSize,subviews:Subviews,cache:inout ()){
+        let points=positions(subviews,width:bounds.width).0
+        for (i,view) in subviews.enumerated(){view.place(at:CGPoint(x:bounds.minX+points[i].x,y:bounds.minY+points[i].y),proposal:.unspecified)}
     }
 }
 struct DevicePicker:View {

@@ -39,6 +39,7 @@ jobs:
           path: build/HuanFangShi-unsigned.ipa
           retention-days: 14
       - name: Build and launch simulator smoke test
+        timeout-minutes: 5
         run: |
           set -o pipefail
           xcodebuild -project HuanFangShi.xcodeproj -scheme HuanFangShi -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/Simulator CODE_SIGNING_ALLOWED=NO build > build/simulator-build.log 2>&1

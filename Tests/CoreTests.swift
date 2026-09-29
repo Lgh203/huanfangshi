@@ -1,6 +1,22 @@
 import XCTest
 @testable import HuanFangCore
 final class CoreTests:XCTestCase {
+ func testRepeatedMistakesStillReachTheEndpoint() throws {
+   let plan=try Move.parse("R2 U F' D2 L B2 U' R F2 L' D B")
+   let initial=try Cube().applying(plan.reversed().map(\.inverse))
+   for i in 0..<24 {
+      var cube=initial,guide=Guide();guide.lock(plan)
+      for _ in 0..<(i%5) {let move=guide.display[0];cube.apply(move);_=guide.accept(move)}
+      let errors=try Move.parse(i%2==0 ? "B B R U' L2":"U' U' F D2 R'")
+      for move in errors {cube.apply(move);_=guide.accept(move)}
+      var guardCount=0
+      while !guide.finished && guardCount<100 {
+         guard let move=guide.display.first else{return XCTFail("Lost remaining plan")}
+         cube.apply(move);_=guide.accept(move);guardCount+=1
+      }
+      XCTAssertTrue(guide.finished);XCTAssertEqual(cube.facelets,Cube.solved)
+   }
+ }
  func testRecordedScrambleUpperBound() throws {
    let history=try Move.parse("R U F2 D B' R2 U L' D2 F")
    let route=MoveReduction.route(currentHistory:history,targetHistory:[])
