@@ -6,6 +6,7 @@ public final class Solver {
     private let queue=DispatchQueue(label:"huanfangshi.solver",qos:.userInitiated)
     private var context: JSContext?
     public init() {}
+    public func prepare(){queue.async{_ = try? self.engine()}}
     private func engine() throws -> JSContext {
         if let context=context { return context }
         guard let js=JSContext() else { throw CubeError.invalid("无法初始化求解器") }

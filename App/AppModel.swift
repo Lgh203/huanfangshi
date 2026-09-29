@@ -33,12 +33,14 @@ final class AppModel:ObservableObject {
     private var correctingHalf=""
     private var lastImage=""
     private var imageGeneration=0
+    private var imageSaving=false
     private var timer:Timer?
     private var timerStart:Date?
     private var mode:ModeSettings {dual ? settings.dual:settings.single}
     init(){
         if let data=UserDefaults.standard.data(forKey:"settings"),let s=try? JSONDecoder().decode(Settings.self,from:data){settings=s}else{settings=Settings()}
         bluetooth.onState={[weak self] i,s,m in self?.receive(i,s,m)}
+        solver.prepare()
         bluetooth.onLost={[weak self] i,why in guard let self=self else{return};self.ready[i]=false;self.clearPlan();self.message=why}
         speech.onRecovery={[weak self] in self?.speakRemainder()}
         speech.onIdle={[weak self] in self?.scheduleNextSpeechIfNeeded()}
@@ -216,15 +218,21 @@ final class AppModel:ObservableObject {
         };imageWork=job;DispatchQueue.main.asyncAfter(deadline:.now()+delay,execute:job)
     }
     func exportImage(automatic:Bool=false,matched:Bool=false){
+        guard !imageSaving else{savedStatus="正在保存上一张图片，请稍候";return}
         let state=states[active]
         if automatic && mode.onlyChanged && state==lastImage{return}
+        imageSaving=true
         let token=imageGeneration,wasDual=dual
         PhotoExporter.save(state:state){[weak self] result in
             guard let self=self else{return}
+            self.imageSaving=false
             switch result {
             case .success:self.lastImage=state;self.savedStatus="已保存魔方图片到相册"
                 if matched && token==self.imageGeneration && wasDual==self.dual && self.isMatched {self.settings.dual.gallery=false;self.savedStatus+="，双魔方自动保存已关闭"}
             case .failure(let e):self.savedStatus="保存失败："+e.localizedDescription
+            }
+            if automatic && self.dual==wasDual && self.states[self.active] != state {
+                self.scheduleImage(matched:self.dual && self.isMatched)
             }
         }
     }
