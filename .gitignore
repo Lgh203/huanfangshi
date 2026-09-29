@@ -11,3 +11,4 @@ DerivedData/
 *.key
 xcuserdata/
 HuanFangShi.xcodeproj/
+App/Assets.xcassets/AppIcon.appiconset/*.png

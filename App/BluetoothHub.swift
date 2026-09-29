@@ -12,6 +12,11 @@ final class CubeLink {
     var writer:CBCharacteristic?, reader:CBCharacteristic?
     var writes:[Data]=[], busy=false, wanted=true, ready=false
     var counter:Int?, cube:Cube?, retries=0, initializationAttempts=0
+    var calibration:Cubie?
+    func displayState(_ raw:String)throws->String {
+        let physical=try Cubie(raw)
+        return calibration?.inverse.multiplied(physical).facelets ?? raw
+    }
     var retry:DispatchWorkItem?
     init(_ p:CBPeripheral,slot:Int,address:String){peripheral=p;self.slot=slot;self.address=address}
 }
@@ -156,9 +161,10 @@ final class BluetoothHub:NSObject,ObservableObject,CBCentralManagerDelegate,CBPe
                     let mask=wire.kind == .moyu ? 255:65535
                     if wire.kind != .qiyi,let previous=link.counter,((serial-previous)&mask)>mask/2{continue}
                     if link.ready,let cube=link.cube,cube.facelets != facelets {onLost?(link.slot,"收到完整状态，重新校准解法")}
+                    let displayed=try link.displayState(facelets)
                     link.cube=try Cube(facelets);link.counter=serial;link.ready=true;link.retries=0;link.retry?.cancel()
                     status=names[link.slot]+" 已同步"
-                    onState?(link.slot,facelets,nil)
+                    onState?(link.slot,displayed,nil)
                 case .move(let serial,let move):
                     guard link.ready,var cube=link.cube else {requestState(link.slot);continue}
                     if wire.kind != .qiyi,let previous=link.counter {
@@ -170,7 +176,7 @@ final class BluetoothHub:NSObject,ObservableObject,CBCentralManagerDelegate,CBPe
                         }
                     }
                     cube.apply(move);link.cube=cube;link.counter=serial
-                    onState?(link.slot,cube.facelets,move)
+                    onState?(link.slot,try link.displayState(cube.facelets),move)
                 }
             }
         }catch{status=error.localizedDescription}
@@ -180,8 +186,10 @@ final class BluetoothHub:NSObject,ObservableObject,CBCentralManagerDelegate,CBPe
         guard let link=links.values.first(where:{$0.slot==slot}) else{return}
         if let reset=link.wire?.resetRequest {link.ready=false;send(reset,link);requestState(slot)}
         else {
-            // The read-only protocols have no reset command. Never silently fake a solved packet.
-            status="此型号不支持硬件重置，已请求真实状态";requestState(slot)
+            guard let raw=link.cube?.facelets,let anchor=try? Cubie(raw),link.ready else{status="尚未取得状态，不能校准";requestState(slot);return}
+            link.calibration=anchor
+            status="手机端已校准为六面复原（实物必须已复原）"
+            onState?(slot,Cube.solved,nil)
         }
     }
     func centralManager(_ central:CBCentralManager,didFailToConnect peripheral:CBPeripheral,error:Error?){disconnected(peripheral,error)}

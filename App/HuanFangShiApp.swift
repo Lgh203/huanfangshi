@@ -15,6 +15,7 @@ struct HomeView:View {
     @State private var showLibrary=false
     @State private var showTimer=false
     @State private var slot:Int?
+    @State private var resetSlot:Int?
     var body:some View {
         NavigationStack {
             ScrollView {
@@ -44,6 +45,10 @@ struct HomeView:View {
             .sheet(isPresented:$showSettings){SettingsView(model:model)}
             .sheet(isPresented:$showLibrary){LibraryView(model:model)}
             .sheet(isPresented:$showTimer){TimerView(model:model)}
+            .alert("确认实物已六面复原？",isPresented:Binding(get:{resetSlot != nil},set:{if !$0{resetSlot=nil}})){
+                Button("取消",role:.cancel){resetSlot=nil}
+                Button("已复原，校准状态"){if let i=resetSlot{model.reset(i)};resetSlot=nil}
+            }message:{Text("只有实物已经复原、手机状态不一致时使用。否则后续解法会不正确。")}
         }.tint(.purple)
     }
     private func cubePanel(_ index:Int)->some View {
@@ -52,7 +57,7 @@ struct HomeView:View {
             CubePreview(state:model.states[index]).frame(maxHeight:model.dual ? 180:260)
             Text(model.ready[index] ? "状态已同步":"尚未同步").font(.caption).foregroundStyle(model.ready[index] ? .green:.secondary)
             Button("连接智能魔方"){slot=index}.buttonStyle(.borderedProminent)
-            Button("一键重置 / 重新同步"){model.reset(index)}.font(.caption)
+            Button("一键重置"){resetSlot=index}.font(.caption)
         }.frame(maxWidth:.infinity)
     }
     private var formulaCard:some View {FormulaCard(model:model)}

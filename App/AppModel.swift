@@ -27,6 +27,7 @@ final class AppModel:ObservableObject {
     private var manualPreset=false
     private var scrambled=[false,false]
     private var lastMove=[Date.distantPast,Date.distantPast]
+    private var histories:[[Move]?]=[nil,nil]
     private var quietWork:DispatchWorkItem?,stageWork:DispatchWorkItem?,imageWork:DispatchWorkItem?,speechWork:DispatchWorkItem?
     private var speechEnd=0
     private var correctingHalf=""
@@ -53,7 +54,7 @@ final class AppModel:ObservableObject {
     }
     func settingsChanged(){
         imageGeneration+=1;imageWork?.cancel();lastImage="";speech.stop();speechEnd=0
-        if guide.locked && !guide.finished {speakRemainder()}else{scheduleSolve()}
+        clearPlan();scheduleSolve()
         if dual && isMatched {scheduleImage(matched:true)}else if !dual && ready[0]{scheduleImage(matched:false)}
     }
     func reset(_ slot:Int){clearPlan();bluetooth.reset(slot);message="已请求设备重置或重新读取真实状态"}
@@ -64,6 +65,10 @@ final class AppModel:ObservableObject {
     private var isMatched:Bool {ready.allSatisfy{$0} && states[0]==states[1] && states[0] != Cube.solved}
     private func receive(_ slot:Int,_ state:String,_ move:Move?){
         let changed=states[slot] != state
+        if state==Cube.solved {histories[slot]=[]}
+        else if let move=move,let history=histories[slot] {
+            let reduced=MoveReduction.simplify(history+[move]);histories[slot]=reduced.count<=400 ? reduced:nil
+        }else if changed {histories[slot]=nil}
         ready[slot]=true;states[slot]=state
         if move != nil || changed {lastMove[slot]=Date()}
         if state != Cube.solved {scrambled[slot]=true}
@@ -146,12 +151,19 @@ final class AppModel:ObservableObject {
         let source=states[active],target=goal()
         if source==target {message="已到目标状态";if dual && preset==1 && isMatched{matched()};return}
         let token=generation;busy=true;message="正在计算并校验解法…"
+        var knownRoute:[Move]?
+        let targetHistory=dual && preset==1 ? histories[1-active] : try? Move.parse(selectedTarget.algorithm)
+        if let currentHistory=histories[active],let targetHistory=targetHistory {
+            let route=MoveReduction.route(currentHistory:currentHistory,targetHistory:targetHistory)
+            if (try? Cube(source).applying(route).facelets)==target{knownRoute=route}
+        }
         solver.solve(source,to:target){[weak self] result in
             guard let self=self,self.generation==token,self.states[self.active]==source,self.goal()==target else{return}
             self.busy=false
             switch result {
             case .failure(let error):self.message=error.localizedDescription
-            case .success(let moves):
+            case .success(let resultMoves):
+                let moves=knownRoute.map{$0.count<resultMoves.count ? $0:resultMoves} ?? resultMoves
                 self.guide.lock(moves);self.speechEnd=0
                 if !self.frozen{self.formula=self.guide.display}
                 self.message="固定解法 \(moves.count) 步";self.speakRemainder()

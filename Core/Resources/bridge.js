@@ -19,12 +19,12 @@ var shortMoves=['U',"U'",'U2','R',"R'",'R2','F',"F'",'F2','D',"D'",'D2','L',"L'"
 function shortSolve(start){
   function expand(frontier,seen){var next=[];for(var node of frontier){for(var m of shortMoves){if(node.path.length&&node.path[node.path.length-1][0]===m[0])continue;var cube=new Cube(node.cube).move(m),key=cube.asString();if(seen.has(key))continue;var item={cube:cube,path:node.path.concat(m)};seen.set(key,item.path);next.push(item);}}return next;}
   if(!shortTable){shortTable=new Map();shortTable.set(new Cube().asString(),[]);var front=[{cube:new Cube(),path:[]}];for(var d=0;d<3;d++)front=expand(front,shortTable);}
-  var seen=new Map(),front=[{cube:start,path:[]}],best=null;seen.set(start.asString(),[]);
+  var seen=new Map(),front=[{cube:start,path:[]}];seen.set(start.asString(),[]);
   for(var depth=0;depth<=3;depth++){
-    for(var node of front){var tail=shortTable.get(node.cube.asString());if(tail){var candidate=node.path.concat(Cube.inverse(tail.join(' ')).split(' ').filter(Boolean));if(best===null||candidate.length<best.length)best=candidate;}}
+    for(var node of front){var tail=shortTable.get(node.cube.asString());if(tail)return node.path.concat(Cube.inverse(tail.join(' ')).split(' ').filter(Boolean)).join(' ');}
     if(depth<3)front=expand(front,seen);
   }
-  return best===null?null:best.join(' ');
+  return null;
 }
 function solveBetween(a,b) {
   var current=checkedCube(a),target=checkedCube(b);

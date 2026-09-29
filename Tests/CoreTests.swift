@@ -1,6 +1,21 @@
 import XCTest
 @testable import HuanFangCore
 final class CoreTests:XCTestCase {
+ func testRecordedScrambleUpperBound() throws {
+   let history=try Move.parse("R U F2 D B' R2 U L' D2 F")
+   let route=MoveReduction.route(currentHistory:history,targetHistory:[])
+   XCTAssertLessThanOrEqual(route.count,10)
+   XCTAssertEqual(try Cube().applying(history).applying(route).facelets,Cube.solved)
+   XCTAssertEqual(try MoveReduction.simplify(Move.parse("U U B' B' R R'")),try Move.parse("U2 B2"))
+ }
+ func testSoftwareCalibrationTracksActualQuarterTurns() throws {
+   let raw=try Cube().applying(Move.parse("R U F2 D' L"))
+   let anchor=try Cubie(raw.facelets)
+   XCTAssertEqual(anchor.inverse.multiplied(anchor).facelets,Cube.solved)
+   let moves=try Move.parse("B U' R2 D F L'")
+   let result=try anchor.inverse.multiplied(Cubie(raw.applying(moves).facelets)).facelets
+   XCTAssertEqual(result,try Cube().applying(moves).facelets)
+ }
  func testKnownOrientation() throws {
    let expected=["R":"UUFUUFUUFRRRRRRRRRFFDFFDFFDDDBDDBDDBLLLLLLLLLUBBUBBUBB","U":"UUUUUUUUUBBBRRRRRRRRRFFFFFFDDDDDDDDDFFFLLLLLLLLLBBBBBB","F":"UUUUUULLLURRURRURRFFFFFFFFFRRRDDDDDDLLDLLDLLDBBBBBBBBB","D":"UUUUUUUUURRRRRRFFFFFFFFFLLLDDDDDDDDDLLLLLLBBBBBBBBBRRR","L":"BUUBUUBUURRRRRRRRRUFFUFFUFFFDDFDDFDDLLLLLLLLLBBDBBDBBD","B":"RRRUUUUUURRDRRDRRDFFFFFFFFFDDDDDDLLLULLULLULLBBBBBBBBB"]
    for (move,state) in expected {XCTAssertEqual(try Cube().applying([Move(move)]).facelets,state)}

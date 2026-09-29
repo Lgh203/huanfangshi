@@ -19,6 +19,7 @@ jobs:
       - name: Generate Xcode project
         run: |
           brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          swift scripts/make-icon.swift
           xcodegen generate
       - name: Build iPhone device app (not simulator)
         run: |
