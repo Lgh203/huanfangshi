@@ -64,7 +64,12 @@ final class BluetoothHub:NSObject,ObservableObject,CBCentralManagerDelegate,CBPe
         }
         let row=DiscoveredCube(id:peripheral.identifier,name:name,address:address,recognized:known,rssi:RSSI.intValue)
         // Update in place: never sort every RSSI packet (avoids moving tap targets).
-        if let index=devices.firstIndex(where:{$0.id==row.id}){devices[index]=row}else{devices.append(row)}
+        if let index=devices.firstIndex(where:{$0.id==row.id}){
+            var update=row
+            if update.address.isEmpty{update.address=devices[index].address}
+            update.recognized=update.recognized || devices[index].recognized
+            devices[index]=update
+        }else{devices.append(row)}
     }
     func connectedID(_ slot:Int)->UUID? {links.values.first{$0.slot==slot && $0.wanted}?.peripheral.identifier}
     func connect(_ id:UUID,slot:Int,address:String){
