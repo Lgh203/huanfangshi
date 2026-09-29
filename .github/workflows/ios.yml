@@ -1,0 +1,44 @@
+name: Build unsigned iPhone IPA
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Core regression tests
+        run: swift test
+      - name: Generate Xcode project
+        run: |
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodegen generate
+      - name: Build iPhone device app (not simulator)
+        run: |
+          set -o pipefail
+          xcodebuild -project HuanFangShi.xcodeproj -scheme HuanFangShi -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO build | tee build/xcodebuild.log
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R build/DerivedData/Build/Products/Release-iphoneos/HuanFangShi.app build/Payload/
+          file build/Payload/HuanFangShi.app/HuanFangShi
+          cd build
+          zip -qr HuanFangShi-unsigned.ipa Payload
+          shasum -a 256 HuanFangShi-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HuanFangShi-unsigned-IPA
+          path: build/HuanFangShi-unsigned.ipa
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log
+          path: build/xcodebuild.log

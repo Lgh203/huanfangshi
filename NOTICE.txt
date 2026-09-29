@@ -1,0 +1,17 @@
+HuanFangShi iOS migration, based on the owner's Android 1.3.28 behavior.
+No signing credentials, activation-generator private keys, or user data included.
+Activation omitted at the owner's explicit request.
+
+Third-party offline solver: cubejs 1.3.2, https://github.com/ldez/cubejs
+MIT license retained in ThirdParty/cubejs-LICENSE.
+Core/Resources/cube.js and solve.js are unmodified npm distribution files.
+The app uses a validated relative-state adapter and short-distance search.
+General two-phase solutions are not guaranteed globally optimal.
+
+BLE packet formats are ported from the owner's existing Android client.
+Supported service paths: GAN Gen4, GAN Gen3, MoYu V10, QiYi QYSC.
+Protocol compatibility, background operation and mini-headset output require
+physical-device testing. Build success does not establish hardware compatibility.
+iOS does not expose peripheral MAC addresses: manual address entry may be needed.
+Photo replacement can require iOS confirmation and is not guaranteed unattended.
+Current build is an initial iOS test release, not a claim of Android feature parity.

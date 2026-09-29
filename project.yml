@@ -1,0 +1,43 @@
+name: HuanFangShi
+options:
+  bundleIdPrefix: com.huanfangshi
+  deploymentTarget:
+    iOS: '16.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '1'
+targets:
+  HuanFangShi:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Core
+        excludes: [Resources]
+      - path: Core/Resources
+        buildPhase: resources
+    info:
+      path: build/Info.plist
+      properties:
+        CFBundleDisplayName: 幻方师
+        CFBundleIdentifier: com.huanfangshi.ios
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSBluetoothAlwaysUsageDescription: 连接智能魔方，接收转动与颜色状态。
+        NSPhotoLibraryAddUsageDescription: 将魔方状态图片保存到相册。
+        NSPhotoLibraryUsageDescription: 选择背景图片以及经你确认替换应用保存的旧图片。
+        UIBackgroundModes: [bluetooth-central, audio]
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.huanfangshi.ios
+        CODE_SIGNING_ALLOWED: NO
+schemes:
+  HuanFangShi:
+    build:
+      targets:
+        HuanFangShi: all

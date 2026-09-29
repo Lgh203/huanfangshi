@@ -1,0 +1,13 @@
+.DS_Store
+.build/
+build/
+DerivedData/
+*.ipa
+*.tgz
+*.zip
+*.p12
+*.mobileprovision
+*.pem
+*.key
+xcuserdata/
+HuanFangShi.xcodeproj/
