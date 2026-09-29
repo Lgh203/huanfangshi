@@ -11,7 +11,9 @@ import PhotosUI
 }
 struct HomeView:View {
     @ObservedObject var model:AppModel
-    @State private var showSettings=false,showLibrary=false,showTimer=false
+    @State private var showSettings=false
+    @State private var showLibrary=false
+    @State private var showTimer=false
     @State private var slot:Int?
     var body:some View {
         NavigationStack {
@@ -90,7 +92,9 @@ struct DevicePicker:View {
     let slot:Int
     @Environment(\.dismiss) private var dismiss
     @State private var selected:UUID?
-    @State private var alias="",mac="",showAll=false
+    @State private var alias=""
+    @State private var mac=""
+    @State private var showAll=false
     init(model:AppModel,slot:Int){self.model=model;self.hub=model.bluetooth;self.slot=slot}
     var body:some View {
         NavigationStack {
@@ -205,7 +209,9 @@ struct SettingsView:View {
 struct LibraryView:View {
     @ObservedObject var model:AppModel
     @Environment(\.dismiss) private var dismiss
-    @State private var name="",algorithm="",error=""
+    @State private var name=""
+    @State private var algorithm=""
+    @State private var error=""
     var body:some View {
         NavigationStack {
             Form {

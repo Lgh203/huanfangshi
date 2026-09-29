@@ -1,6 +1,22 @@
 import XCTest
 @testable import HuanFangCore
 final class CoreTests:XCTestCase {
+ func testKnownOrientation() throws {
+   let expected=["R":"UUFUUFUUFRRRRRRRRRFFDFFDFFDDDBDDBDDBLLLLLLLLLUBBUBBUBB","U":"UUUUUUUUUBBBRRRRRRRRRFFFFFFDDDDDDDDDFFFLLLLLLLLLBBBBBB","F":"UUUUUULLLURRURRURRFFFFFFFFFRRRDDDDDDLLDLLDLLDBBBBBBBBB","D":"UUUUUUUUURRRRRRFFFFFFFFFLLLDDDDDDDDDLLLLLLBBBBBBBBBRRR","L":"BUUBUUBUURRRRRRRRRUFFUFFUFFFDDFDDFDDLLLLLLLLLBBDBBDBBD","B":"RRRUUUUUURRDRRDRRDFFFFFFFFFDDDDDDLLLULLULLULLBBBBBBBBB"]
+   for (move,state) in expected {XCTAssertEqual(try Cube().applying([Move(move)]).facelets,state)}
+ }
+ func testProtocolRoundTripsAndCounters() throws {
+   for kind in CubeKind.allCases {
+     let wire=try CubeProtocol(kind:kind,address:"AA:BB:CC:DD:EE:FF")
+     for clear in wire.initialization {XCTAssertEqual(try wire.crypt(wire.crypt(clear,encrypt:true),encrypt:false),clear)}
+   }
+   let wire=try CubeProtocol(kind:.gan3,address:"AA:BB:CC:DD:EE:FF")
+   var b=[UInt8](repeating:0,count:16);b[0]=0x55;b[1]=1;b[2]=10;b[7]=0x34;b[8]=0x12;b[9]=0x20
+   let packets=try wire.parse(b)
+   guard case .move(let serial,let move)=packets.first else{return XCTFail("Missing GAN3 move")}
+   XCTAssertEqual(serial,0x1234);XCTAssertEqual(move.text,"R")
+   let frame=CubeProtocol.frame([5,5,5,5,5]);XCTAssertEqual(CubeProtocol.crc(Array(frame.prefix(Int(frame[1])))),0)
+ }
  func testMoves() throws {
    XCTAssertEqual(try Move.parse("U'DL2"),try ["U'","D","L2"].map(Move.init))
    XCTAssertThrowsError(try Move.parse("R3"));XCTAssertThrowsError(try Move.parse("S1"))

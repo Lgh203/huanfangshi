@@ -37,6 +37,24 @@ jobs:
           name: HuanFangShi-unsigned-IPA
           path: build/HuanFangShi-unsigned.ipa
           retention-days: 14
+      - name: Build and launch simulator smoke test
+        run: |
+          set -o pipefail
+          xcodebuild -project HuanFangShi.xcodeproj -scheme HuanFangShi -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/Simulator CODE_SIGNING_ALLOWED=NO build > build/simulator-build.log 2>&1
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin); print(next(x["udid"] for group in d["devices"].values() for x in group if "iPhone" in x["name"]))')
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" build/Simulator/Build/Products/Debug-iphonesimulator/HuanFangShi.app
+          xcrun simctl launch "$DEVICE" com.huanfangshi.ios
+          sleep 5
+          xcrun simctl io "$DEVICE" screenshot build/first-launch.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulator-check
+          path: |
+            build/first-launch.png
+            build/simulator-build.log
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

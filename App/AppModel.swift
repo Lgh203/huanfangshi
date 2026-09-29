@@ -95,7 +95,11 @@ final class AppModel:ObservableObject {
             active=slot;targetSlot=slot;phase=preset==1 ? .copying:.final;scheduleSolve();return
         }
         if phase == .matched {
-            if !isMatched {imageWork?.cancel();imageGeneration+=1}
+            if !isMatched {
+                imageWork?.cancel();imageGeneration+=1;stageWork?.cancel()
+                if move != nil {active=slot}
+                phase = preset==1 ? .copying:.final;scheduleSolve();return
+            }
             if !manualPreset{return}
             guard move != nil else{return}
             active=slot;phase=preset==1 ? .copying:.final;scheduleSolve();return
